@@ -30,6 +30,62 @@ document.addEventListener('DOMContentLoaded', function() {
         e.target.value = value;
     });
 
+    // Auto-populate book details when ISBN is entered
+    let fetchTimeout;
+    isbnInput.addEventListener('input', function(e) {
+        const isbn = e.target.value.replace(/[^\d]/g, '');
+
+        // Clear previous timeout
+        clearTimeout(fetchTimeout);
+
+        // Only fetch if we have a complete ISBN (10 or 13 digits)
+        if (isbn.length === 10 || isbn.length === 13) {
+            // Debounce API call by 500ms
+            fetchTimeout = setTimeout(() => {
+                fetchBookDetails(isbn);
+            }, 500);
+        }
+    });
+
+    // Fetch book details from Google Books API
+    async function fetchBookDetails(isbn) {
+        const bookTitleInput = document.getElementById('bookTitle');
+        const bookAuthorInput = document.getElementById('bookAuthor');
+
+        try {
+            // Show loading state (optional - you can add a spinner here)
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+            const data = await response.json();
+
+            if (data.items && data.items.length > 0) {
+                const book = data.items[0].volumeInfo;
+
+                // Auto-populate title
+                if (book.title && !bookTitleInput.value) {
+                    bookTitleInput.value = book.title;
+                    // Add a subtle animation
+                    bookTitleInput.style.backgroundColor = '#f0fdf4';
+                    setTimeout(() => {
+                        bookTitleInput.style.backgroundColor = '';
+                    }, 1000);
+                }
+
+                // Auto-populate author(s)
+                if (book.authors && book.authors.length > 0 && !bookAuthorInput.value) {
+                    bookAuthorInput.value = book.authors.join(', ');
+                    // Add a subtle animation
+                    bookAuthorInput.style.backgroundColor = '#f0fdf4';
+                    setTimeout(() => {
+                        bookAuthorInput.style.backgroundColor = '';
+                    }, 1000);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching book details:', error);
+            // Silently fail - don't show error to user
+        }
+    }
+
     // Validate ISBN
     function validateISBN(isbn) {
         // Remove hyphens for validation
@@ -157,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
             phone: document.getElementById('phone').value,
             isbn: document.getElementById('isbn').value.trim(),
             bookTitle: document.getElementById('bookTitle').value.trim(),
+            bookAuthor: document.getElementById('bookAuthor').value.trim(),
             bookCondition: document.getElementById('bookCondition').value,
             additionalNotes: document.getElementById('additionalNotes').value.trim(),
             submittedAt: new Date().toISOString()
