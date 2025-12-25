@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const addBookBtn = document.getElementById('addBookBtn');
 
     let bookCounter = 0;
-    let activeScannerBookId = null;
     const fetchTimeouts = {};
+    // FIX: Use window.activeScannerBookId instead of local variable to fix scoping bug
 
     // ISBN Scanner functionality
     initializeScanner();
@@ -184,7 +184,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Scan button
         scanBtn.addEventListener('click', function() {
-            activeScannerBookId = bookId;
+            // FIX: Store in window object so scanner callback can access it
+            window.activeScannerBookId = bookId;
             openScanner();
         });
 
