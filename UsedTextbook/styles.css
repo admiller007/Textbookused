@@ -109,12 +109,105 @@ main {
     margin-bottom: var(--spacing-xl);
 }
 
+.books-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-md);
+}
+
 .section-title {
     font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--color-primary);
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: 0;
     letter-spacing: -0.01em;
+}
+
+/* Add Book Button */
+.add-book-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    gap: var(--spacing-xs);
+    background-color: var(--color-surface);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+}
+
+.add-book-btn:hover {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+    border-color: var(--color-primary);
+}
+
+.add-book-btn svg {
+    flex-shrink: 0;
+}
+
+/* Book Entry */
+.book-entry {
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-surface);
+    transition: all var(--transition-base);
+}
+
+.book-entry:hover {
+    border-color: var(--color-secondary);
+}
+
+.book-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.book-entry-title {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-primary);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+/* Remove Book Button */
+.remove-book-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background-color: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-secondary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.remove-book-btn:hover {
+    background-color: var(--color-error);
+    color: var(--color-surface);
+    border-color: var(--color-error);
 }
 
 /* Form Layout */
@@ -517,9 +610,24 @@ footer p {
         margin-bottom: var(--spacing-xl);
     }
 
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
     .section-title {
         font-size: var(--font-size-base);
-        margin-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .add-book-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .book-entry {
+        padding: var(--spacing-md);
     }
 
     .form-group {
