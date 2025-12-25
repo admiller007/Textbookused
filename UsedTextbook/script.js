@@ -12,6 +12,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // ISBN Scanner functionality
     initializeScanner();
 
+    // Show Firebase initialization status on page load
+    setTimeout(() => {
+        if (typeof db !== 'undefined') {
+            showDebugStatus('Firebase initialized successfully! Ready to save submissions.', false);
+        } else if (typeof firebase === 'undefined') {
+            showDebugStatus('Firebase SDK not loaded. Check environment variables.', true);
+        } else {
+            showDebugStatus('Firebase SDK loaded but not initialized. Check firebase-config.js', true);
+        }
+    }, 1000);
+
     // Add first book on load
     addBookEntry();
 
@@ -430,11 +441,37 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 
+    // Debug helper to show status on page
+    function showDebugStatus(message, isError = false) {
+        let debugDiv = document.getElementById('debugStatus');
+        if (!debugDiv) {
+            debugDiv = document.createElement('div');
+            debugDiv.id = 'debugStatus';
+            debugDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:' +
+                (isError ? '#fee' : '#efe') + ';padding:10px;border-radius:5px;border:2px solid ' +
+                (isError ? '#c33' : '#3c3') + ';font-size:12px;z-index:10000;max-width:90%;word-wrap:break-word;';
+            document.body.appendChild(debugDiv);
+        }
+        debugDiv.style.background = isError ? '#fee' : '#efe';
+        debugDiv.style.borderColor = isError ? '#c33' : '#3c3';
+        debugDiv.innerHTML = '<strong>' + (isError ? '❌ ' : '✅ ') + '</strong>' + message;
+
+        // Auto-hide after 8 seconds
+        setTimeout(() => {
+            if (debugDiv.parentNode) {
+                debugDiv.style.opacity = '0';
+                debugDiv.style.transition = 'opacity 1s';
+                setTimeout(() => debugDiv.remove(), 1000);
+            }
+        }, 8000);
+    }
+
     // Submit data to Firebase
     async function submitToFirebase(formData) {
         // Check if Firebase is initialized
         if (typeof db === 'undefined') {
             console.warn('Firebase not configured. Saving to localStorage instead.');
+            showDebugStatus('⚠️ Firebase not configured. Data saved locally only.', true);
             // Fallback to localStorage if Firebase is not configured
             const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
             submissions.push(formData);
@@ -452,6 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add document to Firestore
             const docRef = await db.collection('textbook_submissions').add(dataToSubmit);
             console.log('Submission saved with ID:', docRef.id);
+            showDebugStatus('Firebase ✓ Submission ID: ' + docRef.id, false);
 
             // Also save to localStorage as backup
             const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
@@ -461,6 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return docRef;
         } catch (error) {
             console.error('Firebase submission error:', error);
+            showDebugStatus('Firebase Error: ' + error.message, true);
             throw error;
         }
     }
