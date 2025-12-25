@@ -2,9 +2,239 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('textbookForm');
     const successMessage = document.getElementById('successMessage');
+    const booksContainer = document.getElementById('booksContainer');
+    const addBookBtn = document.getElementById('addBookBtn');
+
+    let bookCounter = 0;
+    const fetchTimeouts = {};
+    // FIX: Use window.activeScannerBookId instead of local variable to fix scoping bug
 
     // ISBN Scanner functionality
     initializeScanner();
+
+    // Show Firebase initialization status on page load
+    setTimeout(() => {
+        if (typeof db !== 'undefined') {
+            showDebugStatus('Firebase initialized successfully! Ready to save submissions.', false);
+        } else if (typeof firebase === 'undefined') {
+            showDebugStatus('Firebase SDK not loaded. Check environment variables.', true);
+        } else {
+            showDebugStatus('Firebase SDK loaded but not initialized. Check firebase-config.js', true);
+        }
+    }, 1000);
+
+    // Add first book on load
+    addBookEntry();
+
+    // Add book button handler
+    addBookBtn.addEventListener('click', function() {
+        addBookEntry();
+    });
+
+    // Fetch book details from Google Books API
+    async function fetchBookDetails(isbn, bookId) {
+        const bookTitleInput = document.getElementById(`bookTitle-${bookId}`);
+        const bookAuthorInput = document.getElementById(`bookAuthor-${bookId}`);
+
+        try {
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+            const data = await response.json();
+
+            if (data.items && data.items.length > 0) {
+                const book = data.items[0].volumeInfo;
+
+                // Auto-populate title
+                if (book.title && !bookTitleInput.value) {
+                    bookTitleInput.value = book.title;
+                    // Add a subtle animation
+                    bookTitleInput.style.backgroundColor = '#f0fdf4';
+                    setTimeout(() => {
+                        bookTitleInput.style.backgroundColor = '';
+                    }, 1000);
+                }
+
+                // Auto-populate author(s)
+                if (book.authors && book.authors.length > 0 && !bookAuthorInput.value) {
+                    bookAuthorInput.value = book.authors.join(', ');
+                    // Add a subtle animation
+                    bookAuthorInput.style.backgroundColor = '#f0fdf4';
+                    setTimeout(() => {
+                        bookAuthorInput.style.backgroundColor = '';
+                    }, 1000);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching book details:', error);
+            // Silently fail - don't show error to user
+        }
+    }
+
+    // Function to create a new book entry
+    function addBookEntry() {
+        bookCounter++;
+        const bookId = bookCounter;
+
+        const bookEntry = document.createElement('div');
+        bookEntry.className = 'book-entry';
+        bookEntry.dataset.bookId = bookId;
+
+        bookEntry.innerHTML = `
+            <div class="book-entry-header">
+                <h3 class="book-entry-title">Book ${bookId}</h3>
+                ${bookCounter > 1 ? `
+                <button type="button" class="remove-book-btn" data-book-id="${bookId}" title="Remove book">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+                ` : ''}
+            </div>
+
+            <div class="form-group">
+                <label for="isbn-${bookId}">ISBN Number</label>
+                <div class="isbn-input-wrapper">
+                    <input
+                        type="text"
+                        id="isbn-${bookId}"
+                        name="isbn"
+                        class="isbn-input"
+                        data-book-id="${bookId}"
+                        required
+                        placeholder="Enter ISBN or scan barcode"
+                        pattern="[0-9\\-]{10,17}"
+                    >
+                    <button type="button" class="scan-btn" data-book-id="${bookId}" title="Scan barcode">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <rect x="9" y="9" width="6" height="6"/>
+                        </svg>
+                    </button>
+                </div>
+                <span class="error-message" id="isbnError-${bookId}"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="bookTitle-${bookId}">Book Title <span class="optional">(Optional)</span></label>
+                <input
+                    type="text"
+                    id="bookTitle-${bookId}"
+                    name="bookTitle"
+                    class="book-title-input"
+                    data-book-id="${bookId}"
+                    placeholder="Introduction to Psychology"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="bookAuthor-${bookId}">Author <span class="optional">(Optional)</span></label>
+                <input
+                    type="text"
+                    id="bookAuthor-${bookId}"
+                    name="bookAuthor"
+                    class="book-author-input"
+                    data-book-id="${bookId}"
+                    placeholder="Jane Smith"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="bookCondition-${bookId}">Condition</label>
+                <select id="bookCondition-${bookId}" name="bookCondition" class="book-condition-select" data-book-id="${bookId}" required>
+                    <option value="">Select condition</option>
+                    <option value="like-new">Like New</option>
+                    <option value="good">Good</option>
+                    <option value="acceptable">Acceptable</option>
+                    <option value="poor">Poor</option>
+                </select>
+                <span class="error-message" id="conditionError-${bookId}"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="additionalNotes-${bookId}">Additional Notes <span class="optional">(Optional)</span></label>
+                <textarea
+                    id="additionalNotes-${bookId}"
+                    name="additionalNotes"
+                    class="book-notes-textarea"
+                    data-book-id="${bookId}"
+                    rows="4"
+                    placeholder="Any additional details about your book..."
+                ></textarea>
+            </div>
+        `;
+
+        booksContainer.appendChild(bookEntry);
+
+        // Add event listeners for this book entry
+        const isbnInput = bookEntry.querySelector('.isbn-input');
+        const scanBtn = bookEntry.querySelector('.scan-btn');
+        const removeBtn = bookEntry.querySelector('.remove-book-btn');
+
+        // ISBN formatting
+        isbnInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^\d-]/g, '');
+            e.target.value = value;
+        });
+
+        // Auto-populate book details when ISBN is entered
+        isbnInput.addEventListener('input', function(e) {
+            const isbn = e.target.value.replace(/[^\d]/g, '');
+
+            // Clear previous timeout for this book
+            if (fetchTimeouts[bookId]) {
+                clearTimeout(fetchTimeouts[bookId]);
+            }
+
+            // Only fetch if we have a complete ISBN (10 or 13 digits)
+            if (isbn.length === 10 || isbn.length === 13) {
+                // Debounce API call by 500ms
+                fetchTimeouts[bookId] = setTimeout(() => {
+                    fetchBookDetails(isbn, bookId);
+                }, 500);
+            }
+        });
+
+        // Scan button
+        scanBtn.addEventListener('click', function() {
+            // FIX: Store in window object so scanner callback can access it
+            window.activeScannerBookId = bookId;
+            openScanner();
+        });
+
+        // Remove button
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                removeBookEntry(bookId);
+            });
+        }
+
+        // Renumber all book entries
+        renumberBooks();
+    }
+
+    // Function to remove a book entry
+    function removeBookEntry(bookId) {
+        const bookEntry = booksContainer.querySelector(`[data-book-id="${bookId}"]`);
+        if (bookEntry) {
+            bookEntry.remove();
+            renumberBooks();
+            // Clear timeout for this book
+            if (fetchTimeouts[bookId]) {
+                clearTimeout(fetchTimeouts[bookId]);
+                delete fetchTimeouts[bookId];
+            }
+        }
+    }
+
+    // Function to renumber book entries
+    function renumberBooks() {
+        const bookEntries = booksContainer.querySelectorAll('.book-entry');
+        bookEntries.forEach((entry, index) => {
+            const title = entry.querySelector('.book-entry-title');
+            if (title) {
+                title.textContent = `Book ${index + 1}`;
+            }
+        });
+    }
 
     // Phone number formatting
     const phoneInput = document.getElementById('phone');
@@ -19,14 +249,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
             }
         }
-        e.target.value = value;
-    });
-
-    // ISBN formatting and validation
-    const isbnInput = document.getElementById('isbn');
-    isbnInput.addEventListener('input', function(e) {
-        // Remove non-digits and hyphens
-        let value = e.target.value.replace(/[^\d-]/g, '');
         e.target.value = value;
     });
 
@@ -79,15 +301,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show error message
     function showError(elementId, message) {
         const errorElement = document.getElementById(elementId);
-        errorElement.textContent = message;
-        errorElement.classList.add('show');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
     }
 
     // Hide error message
     function hideError(elementId) {
         const errorElement = document.getElementById(elementId);
-        errorElement.textContent = '';
-        errorElement.classList.remove('show');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.classList.remove('show');
+        }
     }
 
     // Clear all errors
@@ -125,19 +351,25 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Validate ISBN
-        const isbn = document.getElementById('isbn').value.trim();
-        if (!validateISBN(isbn)) {
-            showError('isbnError', 'Please enter a valid 10 or 13 digit ISBN');
-            isValid = false;
-        }
+        // Validate each book
+        const bookEntries = booksContainer.querySelectorAll('.book-entry');
+        bookEntries.forEach(entry => {
+            const bookId = entry.dataset.bookId;
 
-        // Validate condition
-        const condition = document.getElementById('bookCondition').value;
-        if (!condition) {
-            showError('conditionError', 'Please select the book condition');
-            isValid = false;
-        }
+            // Validate ISBN
+            const isbn = document.getElementById(`isbn-${bookId}`).value.trim();
+            if (!validateISBN(isbn)) {
+                showError(`isbnError-${bookId}`, 'Please enter a valid 10 or 13 digit ISBN');
+                isValid = false;
+            }
+
+            // Validate condition
+            const condition = document.getElementById(`bookCondition-${bookId}`).value;
+            if (!condition) {
+                showError(`conditionError-${bookId}`, 'Please select the book condition');
+                isValid = false;
+            }
+        });
 
         return isValid;
     }
@@ -150,15 +382,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Get form data
-        const formData = {
+        // Get contact information
+        const contactInfo = {
             fullName: document.getElementById('fullName').value.trim(),
             email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value,
-            isbn: document.getElementById('isbn').value.trim(),
-            bookTitle: document.getElementById('bookTitle').value.trim(),
-            bookCondition: document.getElementById('bookCondition').value,
-            additionalNotes: document.getElementById('additionalNotes').value.trim(),
+            phone: document.getElementById('phone').value
+        };
+
+        // Get all books data
+        const books = [];
+        const bookEntries = booksContainer.querySelectorAll('.book-entry');
+        bookEntries.forEach(entry => {
+            const bookId = entry.dataset.bookId;
+            books.push({
+                isbn: document.getElementById(`isbn-${bookId}`).value.trim(),
+                bookTitle: document.getElementById(`bookTitle-${bookId}`).value.trim(),
+                bookAuthor: document.getElementById(`bookAuthor-${bookId}`).value.trim(),
+                bookCondition: document.getElementById(`bookCondition-${bookId}`).value,
+                additionalNotes: document.getElementById(`additionalNotes-${bookId}`).value.trim()
+            });
+        });
+
+        // Create submission data
+        const formData = {
+            ...contactInfo,
+            books: books,
             submittedAt: new Date().toISOString()
         };
 
@@ -168,33 +416,105 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.classList.add('loading');
         submitBtn.textContent = 'Submitting...';
 
-        // Simulate submission (in production, this would send to a backend)
-        setTimeout(() => {
-            // Log submission to console (in production, this would be sent to your server)
-            console.log('Textbook Submission:', formData);
+        // Submit to Firebase
+        submitToFirebase(formData)
+            .then(() => {
+                // Hide form and show success message
+                form.style.display = 'none';
+                successMessage.style.display = 'block';
 
-            // Store in localStorage as a simple example
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Submit Request';
+            })
+            .catch((error) => {
+                console.error('Submission error:', error);
+
+                // Show error to user
+                alert('There was an error submitting your textbook. Please try again or contact support.');
+
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Submit Request';
+            });
+    });
+
+    // Debug helper to show status on page
+    function showDebugStatus(message, isError = false) {
+        let debugDiv = document.getElementById('debugStatus');
+        if (!debugDiv) {
+            debugDiv = document.createElement('div');
+            debugDiv.id = 'debugStatus';
+            debugDiv.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:' +
+                (isError ? '#fee' : '#efe') + ';padding:10px;border-radius:5px;border:2px solid ' +
+                (isError ? '#c33' : '#3c3') + ';font-size:12px;z-index:10000;max-width:90%;word-wrap:break-word;';
+            document.body.appendChild(debugDiv);
+        }
+        debugDiv.style.background = isError ? '#fee' : '#efe';
+        debugDiv.style.borderColor = isError ? '#c33' : '#3c3';
+        debugDiv.innerHTML = '<strong>' + (isError ? '❌ ' : '✅ ') + '</strong>' + message;
+
+        // Auto-hide after 8 seconds
+        setTimeout(() => {
+            if (debugDiv.parentNode) {
+                debugDiv.style.opacity = '0';
+                debugDiv.style.transition = 'opacity 1s';
+                setTimeout(() => debugDiv.remove(), 1000);
+            }
+        }, 8000);
+    }
+
+    // Submit data to Firebase
+    async function submitToFirebase(formData) {
+        // Check if Firebase is initialized
+        if (typeof db === 'undefined') {
+            console.warn('Firebase not configured. Saving to localStorage instead.');
+            showDebugStatus('⚠️ Firebase not configured. Data saved locally only.', true);
+            // Fallback to localStorage if Firebase is not configured
             const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
             submissions.push(formData);
             localStorage.setItem('textbookSubmissions', JSON.stringify(submissions));
+            return Promise.resolve();
+        }
 
-            // Hide form and show success message
-            form.style.display = 'none';
-            successMessage.style.display = 'block';
+        try {
+            // Add server timestamp
+            const dataToSubmit = {
+                ...formData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-            // Reset button state
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('loading');
-            submitBtn.textContent = 'Submit Textbook';
-        }, 1500);
-    });
+            // Add document to Firestore
+            const docRef = await db.collection('textbook_submissions').add(dataToSubmit);
+            console.log('Submission saved with ID:', docRef.id);
+            showDebugStatus('Firebase ✓ Submission ID: ' + docRef.id, false);
+
+            // Also save to localStorage as backup
+            const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
+            submissions.push({ ...formData, firestoreId: docRef.id });
+            localStorage.setItem('textbookSubmissions', JSON.stringify(submissions));
+
+            return docRef;
+        } catch (error) {
+            console.error('Firebase submission error:', error);
+            showDebugStatus('Firebase Error: ' + error.message, true);
+            throw error;
+        }
+    }
 });
 
 // Reset form function
 function resetForm() {
     const form = document.getElementById('textbookForm');
     const successMessage = document.getElementById('successMessage');
+    const booksContainer = document.getElementById('booksContainer');
 
+    // Clear the books container
+    booksContainer.innerHTML = '';
+
+    // Reset the form
     form.reset();
     form.style.display = 'flex';
     successMessage.style.display = 'none';
@@ -205,6 +525,9 @@ function resetForm() {
         error.textContent = '';
         error.classList.remove('show');
     });
+
+    // Reset book counter and add first book
+    document.dispatchEvent(new Event('DOMContentLoaded'));
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -219,19 +542,18 @@ function viewSubmissions() {
 
 // ISBN Scanner functionality
 function initializeScanner() {
-    const scanButton = document.getElementById('scanButton');
     const scannerModal = document.getElementById('scannerModal');
     const closeScanner = document.getElementById('closeScanner');
-    const isbnInput = document.getElementById('isbn');
     const scannerStatus = document.getElementById('scannerStatus');
 
     let isScanning = false;
+    let currentBookId = null;
 
-    // Open scanner modal
-    scanButton.addEventListener('click', function() {
+    // Make openScanner globally accessible
+    window.openScanner = function() {
         scannerModal.style.display = 'flex';
         startScanner();
-    });
+    };
 
     // Close scanner modal
     closeScanner.addEventListener('click', function() {
@@ -304,20 +626,27 @@ function initializeScanner() {
 
                 // Validate that it's a valid ISBN length
                 if (code.length === 10 || code.length === 13) {
-                    // Populate the ISBN field
-                    isbnInput.value = code;
+                    // Find the active scanner book input
+                    const activeBookEntry = document.querySelector(`[data-book-id="${window.activeScannerBookId || 1}"]`);
+                    if (activeBookEntry) {
+                        const isbnInput = activeBookEntry.querySelector('.isbn-input');
+                        if (isbnInput) {
+                            // Populate the ISBN field
+                            isbnInput.value = code;
 
-                    // Trigger input event to format the value
-                    isbnInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            // Trigger input event to format the value and fetch book details
+                            isbnInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    // Show success status
-                    scannerStatus.textContent = 'ISBN detected: ' + code;
+                            // Show success status
+                            scannerStatus.textContent = 'ISBN detected: ' + code;
 
-                    // Close scanner after a short delay
-                    setTimeout(function() {
-                        stopScanner();
-                        scannerModal.style.display = 'none';
-                    }, 1000);
+                            // Close scanner after a short delay
+                            setTimeout(function() {
+                                stopScanner();
+                                scannerModal.style.display = 'none';
+                            }, 1000);
+                        }
+                    }
                 }
             }
         });
