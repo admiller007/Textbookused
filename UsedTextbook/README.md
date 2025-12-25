@@ -85,11 +85,14 @@ Your Firebase is already set up and ready to use! Submissions will be automatica
 
 **What's Already Done:**
 - ✅ Firebase project created (`usedtextbooks-c699d`)
-- ✅ Configuration file updated with your credentials
 - ✅ Firestore integration added to the app
 - ✅ Admin dashboard available at [admin.html](admin.html)
+- ✅ Secure environment variable setup for Vercel
 
 **Next Steps:**
+0. **Configure Vercel Environment Variables** (See [VERCEL_ENV_SETUP.md](VERCEL_ENV_SETUP.md)):
+   - Add Firebase credentials as environment variables in Vercel Dashboard
+   - This keeps your credentials secure and out of the repository
 1. **Set up Firestore Database**:
    - Go to [Firebase Console](https://console.firebase.google.com/project/usedtextbooks-c699d)
    - Click "Firestore Database" in the left sidebar
