@@ -1,0 +1,24 @@
+# Firebase configuration with actual credentials
+# Uncomment the line below if you want to keep your Firebase config private
+# firebase-config.js
+
+# Local development
+.DS_Store
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+.cache/

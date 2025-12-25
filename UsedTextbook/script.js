@@ -225,26 +225,65 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.classList.add('loading');
         submitBtn.textContent = 'Submitting...';
 
-        // Simulate submission (in production, this would send to a backend)
-        setTimeout(() => {
-            // Log submission to console (in production, this would be sent to your server)
-            console.log('Textbook Submission:', formData);
+        // Submit to Firebase
+        submitToFirebase(formData)
+            .then(() => {
+                // Hide form and show success message
+                form.style.display = 'none';
+                successMessage.style.display = 'block';
 
-            // Store in localStorage as a simple example
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Submit Request';
+            })
+            .catch((error) => {
+                console.error('Submission error:', error);
+
+                // Show error to user
+                alert('There was an error submitting your textbook. Please try again or contact support.');
+
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Submit Request';
+            });
+    });
+
+    // Submit data to Firebase
+    async function submitToFirebase(formData) {
+        // Check if Firebase is initialized
+        if (typeof db === 'undefined') {
+            console.warn('Firebase not configured. Saving to localStorage instead.');
+            // Fallback to localStorage if Firebase is not configured
             const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
             submissions.push(formData);
             localStorage.setItem('textbookSubmissions', JSON.stringify(submissions));
+            return Promise.resolve();
+        }
 
-            // Hide form and show success message
-            form.style.display = 'none';
-            successMessage.style.display = 'block';
+        try {
+            // Add server timestamp
+            const dataToSubmit = {
+                ...formData,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-            // Reset button state
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('loading');
-            submitBtn.textContent = 'Submit Textbook';
-        }, 1500);
-    });
+            // Add document to Firestore
+            const docRef = await db.collection('textbook_submissions').add(dataToSubmit);
+            console.log('Submission saved with ID:', docRef.id);
+
+            // Also save to localStorage as backup
+            const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
+            submissions.push({ ...formData, firestoreId: docRef.id });
+            localStorage.setItem('textbookSubmissions', JSON.stringify(submissions));
+
+            return docRef;
+        } catch (error) {
+            console.error('Firebase submission error:', error);
+            throw error;
+        }
+    }
 });
 
 // Reset form function
