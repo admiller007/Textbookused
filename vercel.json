@@ -1,6 +1,45 @@
 {
-  "buildCommand": "cd UsedTextbook",
+  "version": 2,
+  "buildCommand": "cd UsedTextbook && npm run build",
+  "devCommand": null,
+  "installCommand": "cd UsedTextbook && npm install",
+  "framework": null,
   "outputDirectory": "UsedTextbook",
+  "public": false,
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(css|js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
