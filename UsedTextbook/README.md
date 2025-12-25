@@ -4,12 +4,14 @@ A simple, responsive web application for collecting used textbook submissions fr
 
 ## Features
 
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Modern UI Design**: Clean, professional interface with smooth animations
+- **ISBN Barcode Scanner**: Scan textbook barcodes directly from your device camera
+- **Auto-populate Book Details**: Automatically fetches book title and author from ISBN using Google Books API
 - **Form Validation**: Client-side validation for all required fields
-- **ISBN Validation**: Validates both ISBN-10 and ISBN-13 formats
-- **Auto-formatting**: Automatic phone number formatting
-- **User-friendly**: Clear error messages and helpful hints
-- **Modern UI**: Clean, professional design with gradient backgrounds
+- **Firebase Integration**: Secure cloud storage with Firestore database
+- **Fallback Storage**: Automatic localStorage backup if Firebase is unavailable
+- **Admin Dashboard**: View and export all submissions via [admin.html](admin.html)
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
 
 ## Form Fields
 
@@ -77,8 +79,53 @@ Deploy to any static hosting service:
 - **Netlify**: Drag and drop deployment
 - **AWS S3**: Static website hosting
 
-#### Option 3: Add Backend Integration
-Currently, form submissions are stored in browser localStorage. To integrate with a backend:
+#### Option 3: Firebase Setup (Already Configured!)
+
+Your Firebase is already set up and ready to use! Submissions will be automatically saved to Firebase Firestore.
+
+**What's Already Done:**
+- ✅ Firebase project created (`usedtextbooks-c699d`)
+- ✅ Firestore integration added to the app
+- ✅ Admin dashboard available at [admin.html](admin.html)
+- ✅ Secure environment variable setup for Vercel
+
+**Next Steps:**
+0. **Configure Vercel Environment Variables** (See [VERCEL_ENV_SETUP.md](VERCEL_ENV_SETUP.md)):
+   - Add Firebase credentials as environment variables in Vercel Dashboard
+   - This keeps your credentials secure and out of the repository
+1. **Set up Firestore Database**:
+   - Go to [Firebase Console](https://console.firebase.google.com/project/usedtextbooks-c699d)
+   - Click "Firestore Database" in the left sidebar
+   - Click "Create database"
+   - Choose "Start in production mode"
+   - Select your preferred location
+   - Click "Enable"
+
+2. **Configure Security Rules**:
+   - In Firestore, go to the "Rules" tab
+   - Paste this configuration:
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /textbook_submissions/{document=**} {
+         allow create: if true;
+         allow read, update, delete: if false;
+       }
+     }
+   }
+   ```
+   - Click "Publish"
+
+3. **Test it out**:
+   - Submit a test textbook through the form
+   - Check Firebase Console → Firestore Database to see your data
+   - Open [admin.html](admin.html) to view all submissions
+
+For detailed setup instructions, see [FIREBASE_SETUP.md](FIREBASE_SETUP.md)
+
+#### Option 4: Alternative Backend Integration
+If you want to use a different backend:
 
 1. **Modify `script.js`** - Replace the setTimeout simulation with an actual API call:
 ```javascript
@@ -113,13 +160,17 @@ fetch('YOUR_API_ENDPOINT', {
 ## File Structure
 
 ```
-textbook-submission-form/
-├── index.html          # Main HTML file with form structure
-├── styles.css          # CSS styling and responsive design
-├── script.js           # JavaScript for validation and form handling
-├── vercel.json         # Vercel deployment configuration
-├── .vercelignore       # Files to exclude from Vercel deployment
-└── README.md           # This file
+UsedTextbook/
+├── index.html              # Main submission form
+├── admin.html              # Admin dashboard to view submissions
+├── styles.css              # All styling and design
+├── script.js               # Form logic, validation, and submission
+├── firebase-config.js      # Firebase configuration (configured with your credentials)
+├── FIREBASE_SETUP.md       # Detailed Firebase setup guide
+├── README.md               # This file
+├── vercel.json             # Vercel deployment configuration
+├── .vercelignore           # Files to exclude from Vercel deployment
+└── .gitignore              # Git ignore rules
 ```
 
 ## Browser Compatibility
@@ -170,16 +221,31 @@ Edit `script.js` validation functions to change requirements.
 5. **Rate limiting** - Prevent abuse
 6. **Data privacy** - Comply with GDPR/CCPA if applicable
 
+## Viewing Submissions
+
+### Option 1: Admin Dashboard (Recommended)
+- Open [admin.html](admin.html) in your browser
+- View all submissions with statistics
+- Export data to CSV
+
+### Option 2: Firebase Console
+- Go to [Firebase Console](https://console.firebase.google.com/project/usedtextbooks-c699d) → Firestore Database
+- Browse the `textbook_submissions` collection
+
+### Option 3: Browser Console
+- Open browser DevTools (F12)
+- Type `viewSubmissions()` in the console
+
 ## Future Enhancements
 
-- [ ] Backend API integration
-- [ ] Email notifications
-- [ ] Image upload for book condition
-- [ ] Multiple book submissions
-- [ ] Price estimation based on ISBN
-- [ ] Admin dashboard to view submissions
-- [ ] Database storage
-- [ ] Export submissions to CSV/Excel
+- [ ] Email notifications on new submissions
+- [ ] Photo upload for book condition
+- [ ] Multiple book submissions in one form
+- [ ] Price estimation based on ISBN and condition
+- [ ] Advanced search/filtering in admin panel
+- [ ] Export to Excel/PDF
+- [ ] SMS notifications
+- [ ] Integration with textbook buyback APIs
 
 ## Support
 
