@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('textbookForm');
     const successMessage = document.getElementById('successMessage');
 
+    // ISBN Scanner functionality
+    initializeScanner();
+
     // Phone number formatting
     const phoneInput = document.getElementById('phone');
     phoneInput.addEventListener('input', function(e) {
@@ -212,4 +215,118 @@ function viewSubmissions() {
     const submissions = JSON.parse(localStorage.getItem('textbookSubmissions') || '[]');
     console.table(submissions);
     return submissions;
+}
+
+// ISBN Scanner functionality
+function initializeScanner() {
+    const scanButton = document.getElementById('scanButton');
+    const scannerModal = document.getElementById('scannerModal');
+    const closeScanner = document.getElementById('closeScanner');
+    const isbnInput = document.getElementById('isbn');
+    const scannerStatus = document.getElementById('scannerStatus');
+
+    let isScanning = false;
+
+    // Open scanner modal
+    scanButton.addEventListener('click', function() {
+        scannerModal.style.display = 'flex';
+        startScanner();
+    });
+
+    // Close scanner modal
+    closeScanner.addEventListener('click', function() {
+        stopScanner();
+        scannerModal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside
+    scannerModal.addEventListener('click', function(e) {
+        if (e.target === scannerModal) {
+            stopScanner();
+            scannerModal.style.display = 'none';
+        }
+    });
+
+    function startScanner() {
+        if (isScanning) return;
+
+        scannerStatus.textContent = 'Initializing camera...';
+        isScanning = true;
+
+        // Check if Quagga is loaded
+        if (typeof Quagga === 'undefined') {
+            scannerStatus.textContent = 'Scanner library not loaded. Please refresh the page.';
+            isScanning = false;
+            return;
+        }
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: {
+                    width: { min: 640 },
+                    height: { min: 480 },
+                    facingMode: "environment",
+                    aspectRatio: { min: 1, max: 2 }
+                },
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            numOfWorkers: 2,
+            decoder: {
+                readers: [
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_128_reader",
+                    "code_39_reader"
+                ]
+            },
+            locate: true
+        }, function(err) {
+            if (err) {
+                console.error('Scanner initialization error:', err);
+                scannerStatus.textContent = 'Camera access denied or not available. Please check permissions.';
+                isScanning = false;
+                return;
+            }
+            scannerStatus.textContent = 'Scanner ready - position barcode in view';
+            Quagga.start();
+        });
+
+        // Handle detected barcodes
+        Quagga.onDetected(function(result) {
+            if (result && result.codeResult && result.codeResult.code) {
+                const code = result.codeResult.code;
+
+                // Validate that it's a valid ISBN length
+                if (code.length === 10 || code.length === 13) {
+                    // Populate the ISBN field
+                    isbnInput.value = code;
+
+                    // Trigger input event to format the value
+                    isbnInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    // Show success status
+                    scannerStatus.textContent = 'ISBN detected: ' + code;
+
+                    // Close scanner after a short delay
+                    setTimeout(function() {
+                        stopScanner();
+                        scannerModal.style.display = 'none';
+                    }, 1000);
+                }
+            }
+        });
+    }
+
+    function stopScanner() {
+        if (isScanning && typeof Quagga !== 'undefined') {
+            Quagga.stop();
+            isScanning = false;
+        }
+    }
 }
