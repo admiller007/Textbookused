@@ -16,98 +16,58 @@
 
         <main>
             <form id="textbookForm" class="textbook-form">
-                <div class="form-group">
-                    <label for="fullName">Full Name *</label>
-                    <input
-                        type="text"
-                        id="fullName"
-                        name="fullName"
-                        required
-                        placeholder="Enter your full name"
-                    >
-                    <span class="error-message" id="nameError"></span>
-                </div>
+                <div class="form-section contact-info">
+                    <h2 class="section-title">Contact Information</h2>
 
-                <div class="form-group">
-                    <label for="email">Email Address *</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required
-                        placeholder="your.email@example.com"
-                    >
-                    <span class="error-message" id="emailError"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="phone">Phone Number *</label>
-                    <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        required
-                        placeholder="(123) 456-7890"
-                    >
-                    <span class="error-message" id="phoneError"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="isbn">ISBN Number *</label>
-                    <div class="isbn-input-wrapper">
+                    <div class="form-group">
+                        <label for="fullName">Full Name *</label>
                         <input
                             type="text"
-                            id="isbn"
-                            name="isbn"
+                            id="fullName"
+                            name="fullName"
                             required
-                            placeholder="Enter 10 or 13 digit ISBN"
-                            pattern="[0-9\-]{10,17}"
+                            placeholder="Enter your full name"
                         >
-                        <button type="button" id="scanButton" class="scan-btn" title="Scan barcode">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                <path d="M9 3v18M15 3v18"/>
-                            </svg>
-                            Scan
-                        </button>
+                        <span class="error-message" id="nameError"></span>
                     </div>
-                    <span class="error-message" id="isbnError"></span>
-                    <small class="help-text">ISBN can be found on the back cover or copyright page</small>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            placeholder="your.email@example.com"
+                        >
+                        <span class="error-message" id="emailError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            required
+                            placeholder="(123) 456-7890"
+                        >
+                        <span class="error-message" id="phoneError"></span>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="bookTitle">Book Title (Optional)</label>
-                    <input
-                        type="text"
-                        id="bookTitle"
-                        name="bookTitle"
-                        placeholder="Enter book title if known"
-                    >
+                <div class="form-section books-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Books</h2>
+                        <button type="button" id="addBookBtn" class="add-book-btn">+ Add Another Book</button>
+                    </div>
+
+                    <div id="booksContainer">
+                        <!-- Book entries will be added here -->
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="bookCondition">Book Condition *</label>
-                    <select id="bookCondition" name="bookCondition" required>
-                        <option value="">Select condition</option>
-                        <option value="like-new">Like New - No markings, pristine condition</option>
-                        <option value="good">Good - Minor wear, minimal markings</option>
-                        <option value="acceptable">Acceptable - Moderate wear, some markings</option>
-                        <option value="poor">Poor - Heavy wear, extensive markings</option>
-                    </select>
-                    <span class="error-message" id="conditionError"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="additionalNotes">Additional Notes (Optional)</label>
-                    <textarea
-                        id="additionalNotes"
-                        name="additionalNotes"
-                        rows="4"
-                        placeholder="Any additional information about the book..."
-                    ></textarea>
-                </div>
-
-                <button type="submit" class="submit-btn">Submit Textbook</button>
+                <button type="submit" class="submit-btn">Submit Textbooks</button>
             </form>
 
             <div id="successMessage" class="success-message" style="display: none;">

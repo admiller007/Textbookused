@@ -2,9 +2,138 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('textbookForm');
     const successMessage = document.getElementById('successMessage');
+    const booksContainer = document.getElementById('booksContainer');
+    const addBookBtn = document.getElementById('addBookBtn');
+
+    let bookCounter = 0;
 
     // ISBN Scanner functionality
     initializeScanner();
+
+    // Add first book entry on load
+    addBookEntry();
+
+    // Add book button handler
+    addBookBtn.addEventListener('click', function() {
+        addBookEntry();
+    });
+
+    // Function to add a new book entry
+    function addBookEntry() {
+        bookCounter++;
+        const bookId = bookCounter;
+
+        const bookEntry = document.createElement('div');
+        bookEntry.className = 'book-entry';
+        bookEntry.setAttribute('data-book-id', bookId);
+        bookEntry.innerHTML = `
+            <div class="book-entry-header">
+                <h3>Book ${bookId}</h3>
+                ${bookId > 1 ? '<button type="button" class="remove-book-btn" data-book-id="' + bookId + '">&times; Remove</button>' : ''}
+            </div>
+
+            <div class="form-group">
+                <label for="isbn-${bookId}">ISBN Number *</label>
+                <div class="isbn-input-wrapper">
+                    <input
+                        type="text"
+                        id="isbn-${bookId}"
+                        name="isbn-${bookId}"
+                        class="isbn-input"
+                        required
+                        placeholder="Enter 10 or 13 digit ISBN"
+                        pattern="[0-9\\-]{10,17}"
+                        data-book-id="${bookId}"
+                    >
+                    <button type="button" class="scan-btn" data-book-id="${bookId}" title="Scan barcode">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <path d="M9 3v18M15 3v18"/>
+                        </svg>
+                        Scan
+                    </button>
+                </div>
+                <span class="error-message" id="isbnError-${bookId}"></span>
+                <small class="help-text">ISBN can be found on the back cover or copyright page</small>
+            </div>
+
+            <div class="form-group">
+                <label for="bookTitle-${bookId}">Book Title (Optional)</label>
+                <input
+                    type="text"
+                    id="bookTitle-${bookId}"
+                    name="bookTitle-${bookId}"
+                    class="book-title-input"
+                    placeholder="Enter book title if known"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="bookCondition-${bookId}">Book Condition *</label>
+                <select id="bookCondition-${bookId}" name="bookCondition-${bookId}" class="book-condition-select" required>
+                    <option value="">Select condition</option>
+                    <option value="like-new">Like New - No markings, pristine condition</option>
+                    <option value="good">Good - Minor wear, minimal markings</option>
+                    <option value="acceptable">Acceptable - Moderate wear, some markings</option>
+                    <option value="poor">Poor - Heavy wear, extensive markings</option>
+                </select>
+                <span class="error-message" id="conditionError-${bookId}"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="additionalNotes-${bookId}">Additional Notes (Optional)</label>
+                <textarea
+                    id="additionalNotes-${bookId}"
+                    name="additionalNotes-${bookId}"
+                    class="book-notes-textarea"
+                    rows="4"
+                    placeholder="Any additional information about the book..."
+                ></textarea>
+            </div>
+        `;
+
+        booksContainer.appendChild(bookEntry);
+
+        // Add ISBN formatting for this book's ISBN input
+        const isbnInput = bookEntry.querySelector(`#isbn-${bookId}`);
+        isbnInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^\d-]/g, '');
+            e.target.value = value;
+        });
+
+        // Add scan button click handler - FIX: Set window.activeScannerBookId
+        const scanBtn = bookEntry.querySelector('.scan-btn');
+        scanBtn.addEventListener('click', function() {
+            const bookId = this.getAttribute('data-book-id');
+            // FIX: Store in window object so scanner callback can access it
+            window.activeScannerBookId = bookId;
+            document.getElementById('scannerModal').style.display = 'flex';
+            startScanner();
+        });
+
+        // Add remove button handler if it exists
+        const removeBtn = bookEntry.querySelector('.remove-book-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                const bookId = this.getAttribute('data-book-id');
+                const entry = document.querySelector(`.book-entry[data-book-id="${bookId}"]`);
+                entry.remove();
+                renumberBooks();
+            });
+        }
+    }
+
+    // Function to renumber books after removal
+    function renumberBooks() {
+        const bookEntries = booksContainer.querySelectorAll('.book-entry');
+        bookEntries.forEach((entry, index) => {
+            const newNumber = index + 1;
+            const header = entry.querySelector('.book-entry-header h3');
+            if (header) {
+                header.textContent = `Book ${newNumber}`;
+            }
+        });
+    }
 
     // Phone number formatting
     const phoneInput = document.getElementById('phone');
@@ -22,13 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.target.value = value;
     });
 
-    // ISBN formatting and validation
-    const isbnInput = document.getElementById('isbn');
-    isbnInput.addEventListener('input', function(e) {
-        // Remove non-digits and hyphens
-        let value = e.target.value.replace(/[^\d-]/g, '');
-        e.target.value = value;
-    });
+    // ISBN formatting is now handled in addBookEntry function
 
     // Validate ISBN
     function validateISBN(isbn) {
@@ -125,19 +248,31 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        // Validate ISBN
-        const isbn = document.getElementById('isbn').value.trim();
-        if (!validateISBN(isbn)) {
-            showError('isbnError', 'Please enter a valid 10 or 13 digit ISBN');
-            isValid = false;
-        }
+        // Validate all books
+        const bookEntries = document.querySelectorAll('.book-entry');
+        bookEntries.forEach(entry => {
+            const bookId = entry.getAttribute('data-book-id');
 
-        // Validate condition
-        const condition = document.getElementById('bookCondition').value;
-        if (!condition) {
-            showError('conditionError', 'Please select the book condition');
-            isValid = false;
-        }
+            // Validate ISBN
+            const isbnInput = entry.querySelector(`#isbn-${bookId}`);
+            if (isbnInput) {
+                const isbn = isbnInput.value.trim();
+                if (!validateISBN(isbn)) {
+                    showError(`isbnError-${bookId}`, 'Please enter a valid 10 or 13 digit ISBN');
+                    isValid = false;
+                }
+            }
+
+            // Validate condition
+            const conditionSelect = entry.querySelector(`#bookCondition-${bookId}`);
+            if (conditionSelect) {
+                const condition = conditionSelect.value;
+                if (!condition) {
+                    showError(`conditionError-${bookId}`, 'Please select the book condition');
+                    isValid = false;
+                }
+            }
+        });
 
         return isValid;
     }
@@ -151,14 +286,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Get form data
+        const books = [];
+        const bookEntries = document.querySelectorAll('.book-entry');
+        bookEntries.forEach(entry => {
+            const bookId = entry.getAttribute('data-book-id');
+            books.push({
+                isbn: document.getElementById(`isbn-${bookId}`).value.trim(),
+                title: document.getElementById(`bookTitle-${bookId}`).value.trim(),
+                condition: document.getElementById(`bookCondition-${bookId}`).value,
+                notes: document.getElementById(`additionalNotes-${bookId}`).value.trim()
+            });
+        });
+
         const formData = {
             fullName: document.getElementById('fullName').value.trim(),
             email: document.getElementById('email').value.trim(),
             phone: document.getElementById('phone').value,
-            isbn: document.getElementById('isbn').value.trim(),
-            bookTitle: document.getElementById('bookTitle').value.trim(),
-            bookCondition: document.getElementById('bookCondition').value,
-            additionalNotes: document.getElementById('additionalNotes').value.trim(),
+            books: books,
             submittedAt: new Date().toISOString()
         };
 
@@ -218,20 +362,13 @@ function viewSubmissions() {
 }
 
 // ISBN Scanner functionality
+// Make scanner control variables global so they can be accessed from addBookEntry
+let isScanning = false;
+
 function initializeScanner() {
-    const scanButton = document.getElementById('scanButton');
     const scannerModal = document.getElementById('scannerModal');
     const closeScanner = document.getElementById('closeScanner');
-    const isbnInput = document.getElementById('isbn');
     const scannerStatus = document.getElementById('scannerStatus');
-
-    let isScanning = false;
-
-    // Open scanner modal
-    scanButton.addEventListener('click', function() {
-        scannerModal.style.display = 'flex';
-        startScanner();
-    });
 
     // Close scanner modal
     closeScanner.addEventListener('click', function() {
@@ -246,6 +383,10 @@ function initializeScanner() {
             scannerModal.style.display = 'none';
         }
     });
+
+    // Make startScanner available globally
+    window.startScanner = startScanner;
+    window.stopScanner = stopScanner;
 
     function startScanner() {
         if (isScanning) return;
@@ -304,20 +445,26 @@ function initializeScanner() {
 
                 // Validate that it's a valid ISBN length
                 if (code.length === 10 || code.length === 13) {
-                    // Populate the ISBN field
-                    isbnInput.value = code;
+                    // FIX: Use window.activeScannerBookId to route to correct book entry
+                    const bookId = window.activeScannerBookId || '1'; // Fallback to book 1
+                    const isbnInput = document.getElementById(`isbn-${bookId}`);
 
-                    // Trigger input event to format the value
-                    isbnInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (isbnInput) {
+                        // Populate the ISBN field
+                        isbnInput.value = code;
 
-                    // Show success status
-                    scannerStatus.textContent = 'ISBN detected: ' + code;
+                        // Trigger input event to format the value
+                        isbnInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    // Close scanner after a short delay
-                    setTimeout(function() {
-                        stopScanner();
-                        scannerModal.style.display = 'none';
-                    }, 1000);
+                        // Show success status
+                        scannerStatus.textContent = 'ISBN detected: ' + code;
+
+                        // Close scanner after a short delay
+                        setTimeout(function() {
+                            stopScanner();
+                            scannerModal.style.display = 'none';
+                        }, 1000);
+                    }
                 }
             }
         });
