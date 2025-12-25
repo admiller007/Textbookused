@@ -38,14 +38,46 @@ A simple, responsive web application for collecting used textbook submissions fr
 
 ### Deployment Options
 
-#### Option 1: Static Hosting (Simplest)
+#### Option 1: Deploy to Vercel (Recommended) ⚡
+
+This project is configured for seamless Vercel deployment.
+
+**Quick Deploy:**
+
+1. **Install Vercel CLI** (optional, for command-line deployment):
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Deploy via Vercel Dashboard** (easiest method):
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Add New Project"
+   - Import your Git repository
+   - Vercel will automatically detect the configuration
+   - Click "Deploy"
+
+3. **Deploy via CLI**:
+   ```bash
+   vercel
+   ```
+   Follow the prompts to deploy your site.
+
+**What's Included:**
+- ✅ `vercel.json` - Configuration for routing and security headers
+- ✅ `.vercelignore` - Excludes unnecessary files from deployment
+- ✅ Security headers (XSS protection, content type sniffing prevention)
+- ✅ Optimized caching for static assets
+
+**Custom Domain:**
+After deployment, you can add a custom domain in your Vercel dashboard under "Settings" → "Domains".
+
+#### Option 2: Other Static Hosting Services
 Deploy to any static hosting service:
 - **GitHub Pages**: Free hosting directly from your repository
 - **Netlify**: Drag and drop deployment
-- **Vercel**: One-click deployment
 - **AWS S3**: Static website hosting
 
-#### Option 2: Add Backend Integration
+#### Option 3: Add Backend Integration
 Currently, form submissions are stored in browser localStorage. To integrate with a backend:
 
 1. **Modify `script.js`** - Replace the setTimeout simulation with an actual API call:
@@ -85,7 +117,9 @@ textbook-submission-form/
 ├── index.html          # Main HTML file with form structure
 ├── styles.css          # CSS styling and responsive design
 ├── script.js           # JavaScript for validation and form handling
-└── README.md          # This file
+├── vercel.json         # Vercel deployment configuration
+├── .vercelignore       # Files to exclude from Vercel deployment
+└── README.md           # This file
 ```
 
 ## Browser Compatibility
