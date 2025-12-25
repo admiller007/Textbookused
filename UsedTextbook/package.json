@@ -1,0 +1,11 @@
+{
+  "name": "used-textbook-app",
+  "version": "1.0.0",
+  "description": "Used textbook submission form with Firebase integration",
+  "scripts": {
+    "build": "node build-firebase-config.js"
+  },
+  "keywords": ["textbook", "firebase", "vercel"],
+  "author": "",
+  "license": "MIT"
+}
