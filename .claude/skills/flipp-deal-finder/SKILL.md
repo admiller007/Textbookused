@@ -50,8 +50,8 @@ digraph flipp_workflow {
     "Click result to see details" -> "Record: Item, Store, Price";
     "Record: Item, Store, Price" -> "Next result";
     "Next result" -> "More results to check?";
-    "More results to check?" -> "Click result to see details" [label="yes"];
-    "More results to check?" -> "More items?" [label="no"];
+    "More results to check?" -> "Click result to see details" [label="yes, until ALL checked"];
+    "More results to check?" -> "More items?" [label="no, all items checked"];
     "Generate consolidated summary" -> "Done";
 }
 ```
@@ -65,7 +65,7 @@ digraph flipp_workflow {
 | 3. Set location | Click zipcode dropdown, enter zipcode | `find()` → `form_input()` or `computer(type)` |
 | 4. Search item | Type in search box, press Enter | `find()` → `form_input()` or `computer(type)` |
 | 5. **Scroll ALL results** | **Scroll to see complete list** | **`computer(scroll, direction: "down")`** |
-| 6. Get details | Click result cards to open modals | `computer(left_click)` on multiple results |
+| 6. **Check EVERY item** | **Click on EVERY result to get store/price** | **`computer(left_click)` on ALL items** |
 | 7. Extract data | Read store name and price from modal | `read_page()` or screenshot analysis |
 | 8. Track results | Maintain markdown table internally | In-memory tracking |
 
@@ -126,7 +126,7 @@ Generate final summary showing cheapest option per item:
 | Mistake | Fix |
 |---------|-----|
 | Assuming store names visible in search results | Always click into item details modal to see store |
-| **Stopping after first screen of results** | **CRITICAL: Scroll through ALL results. Best deals often require scrolling. Check at least 8-10 items minimum, more if available** |
+| **Stopping after first screen of results** | **CRITICAL: Scroll through ALL results. Best deals often require scrolling. Check EVERY SINGLE item in the search results, not just 8-10** |
 | Checking only first result | Check multiple results across all visible options |
 | Not tracking results systematically | Use markdown table to avoid losing data |
 | Forgetting to set zipcode | Verify zipcode is set before searching |
@@ -152,6 +152,13 @@ Generate final summary showing cheapest option per item:
 - Use `computer(scroll, direction: "down")` to reveal more items
 - Best deals are often NOT in the first few visible results
 - Check count indicator (e.g., "Items 20" means 20 results to review)
+
+**Checking Items:**
+- **MANDATORY:** Check EVERY SINGLE item in the search results, not just a sample
+- Note the total count from the page (e.g., "Items 22" = must check all 22)
+- Click on each item to see store name and exact price
+- Missing even one item could mean missing the best deal
+- Example: If page shows "Items 22", you must check all 22 items
 
 **Screenshots:**
 - Take screenshots when debugging layout issues
