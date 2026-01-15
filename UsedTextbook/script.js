@@ -12,10 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ISBN Scanner functionality
     initializeScanner();
 
-    // Show Firebase initialization status on page load
+    // Show Firebase initialization status on page load (only show errors)
     setTimeout(() => {
         if (typeof db !== 'undefined') {
-            showDebugStatus('Firebase initialized successfully! Ready to save submissions.', false);
+            // Firebase ready - no message needed
         } else if (typeof firebase === 'undefined') {
             showDebugStatus('Firebase SDK not loaded. Check environment variables.', true);
         } else {
